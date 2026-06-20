@@ -1,0 +1,30 @@
+# Agent Skills
+
+A collection of [Agent Skills](https://agentskills.io) — portable `SKILL.md` files that work across Claude Code, OpenAI Codex, Gemini CLI, Cursor, and other tools that support the open skills standard.
+
+## Skills
+
+| Skill | Description |
+|-------|-------------|
+| [`project-setup`](skills/project-setup/) | Set up a new AI-assisted project by interviewing the user and generating five foundational files (AGENTS.md, DIARY.md, SOUL.md, INITIAL_CONTEXT.md, PROJECT_STATUS.md). Optionally publishes the project to GitHub. |
+
+## Installation
+
+Each skill is a self-contained folder under `skills/`. To install one, copy its folder into your tool's skills directory:
+
+| Tool | Personal (all projects) | Project-local |
+|------|-------------------------|---------------|
+| Claude Code | `~/.claude/skills/` | `.claude/skills/` |
+| Codex / Cursor / Gemini CLI | `~/.agents/skills/` | `.agents/skills/` |
+
+For example, to install `project-setup` for Claude Code:
+
+```bash
+cp -R skills/project-setup ~/.claude/skills/
+```
+
+The skill is picked up automatically the next time the tool starts. The folder name must stay the same as the skill's `name` in its frontmatter.
+
+## License
+
+See [LICENSE](LICENSE).
