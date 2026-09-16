@@ -7,6 +7,7 @@ A collection of [Agent Skills](https://agentskills.io) — portable `SKILL.md` f
 | Skill | Description |
 |-------|-------------|
 | [`elegant-everyday-visual-guide`](skills/elegant-everyday-visual-guide/) | Create original Elegant, Everyday fashion infographics from source visuals through a concise copy-selection and image-generation workflow. |
+| [`lou-lilou-visual-guide`](skills/lou-lilou-visual-guide/) | Create original Lou & Lilou fashion infographics from source visuals through a concise copy-selection and image-generation workflow, featuring the Lou and Lilou personas. |
 | [`project-setup`](skills/project-setup/) | Set up a new AI-assisted project by interviewing the user and generating five foundational files (AGENTS.md, DIARY.md, SOUL.md, INITIAL_CONTEXT.md, PROJECT_STATUS.md). Optionally publishes the project to GitHub. |
 
 ## Installation
