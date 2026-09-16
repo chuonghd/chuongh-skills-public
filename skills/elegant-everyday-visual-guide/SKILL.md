@@ -135,6 +135,14 @@ Once the three copy components and header-avatar choice are approved:
 5. Include the extracted educational terminology, definitions, and mappings in the generation prompt as locked content. Require the generated guide to render them accurately and verify the output against the source before presenting it.
 6. Include the visual-direction requirements in the generation prompt and explicitly instruct the tool to create a fresh composition rather than reproduce the source's layout or artwork.
 
+## Social Caption Suggestions
+
+After generating and presenting the guide, suggest exactly three caption options for the post. Each option must:
+
+- Be 2–4 sentences, with a strong hook as the first sentence.
+- Briefly describe the guide's relevant fashion insight and, when natural, include a context-appropriate CTA.
+- End with relevant hashtags, always including `#eleganteveryday #outfitideas #styling`. Add only additional hashtags that are directly relevant to the post.
+
 When Elise or Nora is selected, explicitly pass that avatar's bundled asset to the image-generation tool as an image reference. When Both is selected, pass both bundled assets as separate identity references and instruct the tool to preserve each identity distinctly. Also pass the source guide and any applicable user-attached avatar references when supported. Make each reference's separate role explicit in the generation prompt. If None is selected, do not pass Elise or Nora and do not place a brand avatar in the header. If image generation is unavailable, state that limitation plainly rather than claiming a visual was generated.
 
 ## Attachment Roles
