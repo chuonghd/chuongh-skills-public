@@ -6,3 +6,6 @@
 # Python build caches
 __pycache__/
 *.pyc
+
+# Node dependencies (install with `npm install` in the skill folder)
+node_modules/

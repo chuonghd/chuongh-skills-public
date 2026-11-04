@@ -1,0 +1,8 @@
+{
+  "name": "image-upscale-webp",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@jsquash/webp": "1.5.0"
+  }
+}
