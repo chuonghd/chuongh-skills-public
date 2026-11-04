@@ -34,7 +34,7 @@ _GPT_QUALITIES_2_5 = ["low", "medium", "high", "xhigh", "max"]
 # (`image_tokens`, same for every aspect ratio), per the pricing page footnotes.
 MODELS = {
     "gemini-nano-banana-2.1": {
-        "label": "Nano Banana 2.1", "provider": "gemini", "default": True, "latest": True, "generate": True,
+        "label": "Nano Banana 2.1", "provider": "gemini", "latest": True, "generate": True,
         "rates": _rates(1.50, 1.50, 30.00, 7.50),
         "image_tokens": {"1K": 1120, "2K": 1680, "4K": 3780},
         "sizes": "1K–4K, 14 ratios",

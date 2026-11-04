@@ -282,13 +282,19 @@ def build_html(store, records):
 </body></html>"""
 
 
+def write_report(store):
+    """Rebuild <store>/usage-report.html from the ledger and return its path."""
+    out = store / "usage-report.html"
+    out.write_text(build_html(store, load_ledger(store)))
+    return out
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--open", action="store_true", help="open the report in the default browser")
     args = parser.parse_args()
     store = Path(os.environ.get("IMAGE_GEN_HOME", Path.home() / ".image-gen")).expanduser()
-    out = store / "usage-report.html"
-    out.write_text(build_html(store, load_ledger(store)))
+    out = write_report(store)
     print(out)
     if args.open:
         subprocess.run(["open", str(out)], check=False)

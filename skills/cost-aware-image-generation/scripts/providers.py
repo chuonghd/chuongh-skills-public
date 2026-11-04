@@ -23,7 +23,7 @@ OPENAI_BASE = "https://api.openai.com/v1/images"
 TIMEOUT_S = 300  # complex prompts can take up to ~2 minutes
 
 
-def _require_key(name):
+def require_key(name):
     key = os.environ.get(name)
     if not key:
         raise SystemExit(f"{name} is not set. Copy .env.example to .env in the skill folder and fill it in.")
@@ -65,7 +65,7 @@ def _read_image(path):
 
 
 def strip_base64(obj):
-    """Recursively replace long base64 payloads so metadata files stay small."""
+    """Recursively replace base64 payloads (Gemini `data`, OpenAI `b64_json`, and `data:` URLs) so metadata files stay small."""
     if isinstance(obj, dict):
         return {
             k: (f"<{len(v)} chars stripped>" if k in ("data", "b64_json") and isinstance(v, str) else strip_base64(v))
@@ -73,6 +73,8 @@ def strip_base64(obj):
         }
     if isinstance(obj, list):
         return [strip_base64(v) for v in obj]
+    if isinstance(obj, str) and obj.startswith("data:") and ";base64," in obj:
+        return f"{obj[:obj.index(';base64,') + 8]}<{len(obj)} chars stripped>"
     return obj
 
 
@@ -107,7 +109,7 @@ def build_gemini_request(model, prompt, input_paths, aspect_ratio, resolution, t
 
 
 def call_gemini(request_body, resolution, has_input_images):
-    key = _require_key("GEMINI_API_KEY")
+    key = require_key("GEMINI_API_KEY")
     resp = _post_json(GEMINI_URL, {"x-goog-api-key": key, "Api-Revision": GEMINI_API_REVISION}, request_body)
 
     images = []
@@ -154,7 +156,7 @@ def build_openai_request(model, prompt, input_paths, size, quality):
 
 
 def call_openai(request_body):
-    key = _require_key("OPENAI_API_KEY")
+    key = require_key("OPENAI_API_KEY")
     endpoint = "edits" if request_body.get("images") else "generations"
     resp = _post_json(f"{OPENAI_BASE}/{endpoint}", {"Authorization": f"Bearer {key}"}, request_body)
 

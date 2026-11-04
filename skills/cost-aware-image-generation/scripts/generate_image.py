@@ -8,11 +8,13 @@ and cost in USD and VND.
 Store layout (default ~/.image-gen, override with IMAGE_GEN_HOME):
   ledger.jsonl                    one JSON line per generation
   fx-cache.json                   today's USD->VND rate
+  daily-spend-ack.json            today's acknowledged daily spend alert ($10 steps)
   runs/<timestamp>_<slug>/
     prompt.txt  request.json  response-meta.json  run.json
     inputs/     outputs/
 
 Examples:
+  generate_image.py --prompt "A lighthouse at dusk"                  # OpenAI GPT Image 2.5 Sunburst (default)
   generate_image.py --provider gemini --prompt "A lighthouse at dusk"
   generate_image.py --provider openai --prompt-file p.txt --input ref.png --out ./hero.png
   generate_image.py --provider openai --size 1536x1024 --reason "landscape web hero" --prompt "..."
@@ -33,6 +35,7 @@ SKILL_DIR = Path(__file__).resolve().parent.parent  # resolves through install s
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from pricing import MODELS, PRICES, PRICES_CHECKED_ON, compute_cost_usd, get_usd_vnd_rate  # noqa: E402
 import providers  # noqa: E402
+import daily_spend_guard  # noqa: E402
 
 # Standard tier: medium quality, short edge ~1024px in any shape (square, portrait, landscape).
 # Shape is free; only a bigger short edge, a higher resolution tier, or non-medium quality needs --reason.
@@ -149,7 +152,8 @@ def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--check-keys", action="store_true",
                    help="report which API keys are set (never their values) and exit")
-    p.add_argument("--provider", choices=["gemini", "openai"])
+    p.add_argument("--provider", choices=["gemini", "openai"], default="openai",
+                   help="openai (default: GPT Image 2.5 Sunburst) or gemini (Nano Banana 2.1)")
     src = p.add_mutually_exclusive_group()
     src.add_argument("--prompt")
     src.add_argument("--prompt-file")
@@ -164,6 +168,8 @@ def main():
     p.add_argument("--label", help="short name for the run folder")
     p.add_argument("--out", help="also copy the final image to this path")
     p.add_argument("--dry-run", action="store_true", help="validate and estimate only; no API call")
+    p.add_argument("--ack-daily-spend", type=int, metavar="USD",
+                   help="acknowledge today's daily spend alert (10, 20, …) after the user agreed to continue")
     args = p.parse_args()
 
     load_env_file(SKILL_DIR / ".env")
@@ -172,8 +178,8 @@ def main():
         for name in ("GEMINI_API_KEY", "OPENAI_API_KEY"):
             print(f"{name}: {'set' if os.environ.get(name) else 'NOT set'}")
         return
-    if not args.provider or (args.prompt is None and args.prompt_file is None):
-        p.error("--provider and one of --prompt / --prompt-file are required")
+    if args.prompt is None and args.prompt_file is None:
+        p.error("one of --prompt / --prompt-file is required")
 
     prompt = args.prompt if args.prompt is not None else Path(args.prompt_file).read_text()
     for path in args.input:
@@ -185,10 +191,19 @@ def main():
     est = estimate(settings, ledger)
 
     if args.dry_run:
-        print(json.dumps({"dry_run": True, "settings": settings, "estimate": est}, indent=2))
+        print(json.dumps({"dry_run": True, "settings": settings, "estimate": est,
+                          "daily_spend": daily_spend_guard.status(store, ledger)}, indent=2))
         return
 
-    run_id = f"{datetime.now().strftime('%Y-%m-%d_%H%M%S')}_{slugify(args.label or prompt)}"
+    # Fail before creating any files if this provider's key is missing (dry runs don't need a key).
+    providers.require_key("OPENAI_API_KEY" if settings["provider"] == "openai" else "GEMINI_API_KEY")
+    # Stop before any API call when today's spend has crossed an unacknowledged $10 step.
+    daily_spend_guard.check(store, ledger, args.ack_daily_spend)
+
+    base_id = f"{datetime.now().strftime('%Y-%m-%d_%H%M%S')}_{slugify(args.label or prompt)}"
+    run_id, n = base_id, 2
+    while (store / "runs" / run_id).exists():  # two runs in the same second with the same label
+        run_id, n = f"{base_id}-{n}", n + 1
     run_dir = store / "runs" / run_id
     (run_dir / "inputs").mkdir(parents=True)
     (run_dir / "outputs").mkdir()
@@ -249,13 +264,30 @@ def main():
     )
     _write_record(ledger, run_dir, record)
     print(json.dumps({k: record[k] for k in ("id", "status", "outputs", "copied_to", "tokens", "cost_breakdown_usd",
-                                             "cost_usd", "cost_vnd", "fx", "duration_s", "run_dir")}, indent=2))
+                                             "cost_usd", "cost_vnd", "fx", "duration_s", "run_dir", "report")}, indent=2))
 
 
 def _write_record(ledger, run_dir, record):
     (run_dir / "run.json").write_text(json.dumps(record, indent=2, ensure_ascii=False))
     with ledger.open("a") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    record["report"] = refresh_report(ledger.parent)
+
+
+def auto_update_enabled():
+    """AUTO_UPDATE_REPORT in the shell or the skill's .env; on unless set to false/0/no/off."""
+    return os.environ.get("AUTO_UPDATE_REPORT", "true").strip().lower() not in ("false", "0", "no", "off")
+
+
+def refresh_report(store):
+    """Rebuild the usage report after a run (never opens it). A report problem never fails the generation."""
+    if not auto_update_enabled():
+        return "auto-update off (AUTO_UPDATE_REPORT=false)"
+    try:
+        import export_usage_html  # imported here so a report bug can't break generation at startup
+        return str(export_usage_html.write_report(store))
+    except Exception as err:  # noqa: BLE001
+        return f"not updated: {err}"
 
 
 if __name__ == "__main__":

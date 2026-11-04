@@ -1,6 +1,6 @@
 ---
 name: cost-aware-image-generation
-description: "Generate or edit images with a Gemini or OpenAI API key at a predictable, deliberately chosen cost. Enforces a standard tier of medium quality and ~1024px on the short edge (any shape: square, portrait or landscape), requires a stated reason for any larger or higher-quality setting, and logs every generation (prompt, inputs, outputs, full token counts, cost in USD and VND) to a local ledger. Use when the user asks to generate, create, render, or edit an image via the Gemini (Nano Banana) or OpenAI (GPT Image) API, or asks how much their image generations cost."
+description: "Generate or edit images with an OpenAI (default: GPT Image 2.5 Sunburst) or Gemini API key at a predictable, deliberately chosen cost. Enforces a standard tier of medium quality and ~1024px on the short edge (any shape: square, portrait or landscape), requires a stated reason for any larger or higher-quality setting, and logs every generation (prompt, inputs, outputs, full token counts, cost in USD and VND) to a local ledger. Use when the user asks to generate, create, render, or edit an image via the Gemini (Nano Banana) or OpenAI (GPT Image) API, or asks how much their image generations cost."
 ---
 
 # Cost-Aware Image Generation
@@ -15,8 +15,8 @@ The standard tier is **medium quality with ~1024px on the short edge, in whateve
 
 | Provider | Model | Standard tier (no reason needed) | Used when nothing is given |
 |---|---|---|---|
+| `openai` **(default)** (needs `OPENAI_API_KEY`) | `gpt-image-2.5-sunburst` | `--quality medium`, any `--size` with short edge ≤ 1024 (e.g. 1024x1024, 1536x1024, 1024x1536) | `--size 1024x1536` |
 | `gemini` (needs `GEMINI_API_KEY`) | `gemini-nano-banana-2.1` | `--resolution 1K --thinking medium`, any `--aspect` (e.g. 1:1 = 1024x1024, 3:2 = 1264x848, 2:3 = 848x1264) | `--aspect 2:3` |
-| `openai` (needs `OPENAI_API_KEY`) | `gpt-image-2.5-sunburst` | `--quality medium`, any `--size` with short edge ≤ 1024 (e.g. 1024x1024, 1536x1024, 1024x1536) | `--size 1024x1536` |
 
 Keys are read from the shell environment first, then from `.env` in this skill folder (gitignored; template: `.env.example`).
 
@@ -30,7 +30,7 @@ The script loads keys itself; the agent never needs to see them.
 - Never ask the user to paste a key into chat. If a key is missing, tell them to copy `.env.example` to `.env` in this skill folder and fill it in themselves.
 - If the user pastes a key into chat anyway, don't repeat it; advise them to rotate it, since it is now in the conversation history.
 
-If only one key is set, use that provider. If both are set and the user has no preference, ask once which to use.
+**Default to OpenAI GPT Image 2.5 Sunburst** (`--provider openai`, also what the script uses when `--provider` is omitted). Don't ask which provider to use. Use Gemini only when the user asks for it, or when `OPENAI_API_KEY` is not set (then say so and use Gemini if its key is set).
 
 ## The cost rule
 
@@ -50,6 +50,17 @@ Before any above-standard run:
 The script refuses above-standard settings without `--reason`, refuses `auto` size/quality, and always generates exactly one image (`n=1`, no partial previews, Standard tier — never Batch). Do not work around these limits; generate again instead of asking for several images per call.
 
 Lower-cost options worth suggesting when they fit: `--quality low` (OpenAI) or `--thinking minimal` (Gemini) for rough drafts.
+
+## Daily spend alarm
+
+The script stops before any API call once **today's spend reaches $10, and again at every further $10 ($20, $30, …)**. It prints `DAILY SPEND ALERT`, exits with code 3, and generates nothing.
+
+When that happens:
+1. Stop. Tell the user today's spend and the alert level from the message.
+2. Ask whether to continue. Don't retry, switch provider, or lower settings to get around it.
+3. Only if the user explicitly says yes, re-run the same command with `--ack-daily-spend <level>` (e.g. `10`). That acknowledgement holds for the rest of the day until the next $10 level.
+
+Never pass `--ack-daily-spend` on your own, in advance, or for a level the user didn't approve. `--dry-run` shows today's spend and alert status without stopping.
 
 ## Workflow
 
@@ -78,6 +89,7 @@ One global store for all projects: `~/.image-gen/` (override with `IMAGE_GEN_HOM
 ~/.image-gen/
   ledger.jsonl          one JSON line per generation (successes and failures)
   fx-cache.json         today's USD->VND rate
+  daily-spend-ack.json  today's acknowledged spend alert level
   runs/<YYYY-MM-DD_HHMMSS>_<slug>/
     prompt.txt          exact prompt sent
     request.json        request body (base64 image data stripped)
@@ -91,7 +103,9 @@ Each ledger line contains: `id`, `created_at`, `project` (working directory), `s
 
 To answer "how much have I spent?", read `ledger.jsonl` and sum `cost_usd` / `cost_vnd`.
 
-To show usage visually, run `python3 <skill-dir>/scripts/export_usage_html.py --open`. It writes `~/.image-gen/usage-report.html`: total and per-model spend, then one row per generation with thumbnail, settings, full prompt, every token count, and cost in USD and VND. Search and provider filtering are built in. Images open in a zoomable popup; each run's **Pricing** button shows tokens × rate = cost; the header's **Models & pricing** button compares every catalog model (rates in USD and VND, estimated cost per image at the standard tier, and the user's measured average). Re-run it after new generations; the file must stay in the store folder for thumbnails to load.
+The report at `~/.image-gen/usage-report.html` is rebuilt automatically after every generation (takes milliseconds; the script's output shows its path under `report`). It is **never opened** unless the user asks to see it; then open that file, or run `python3 <skill-dir>/scripts/export_usage_html.py --open`. The user can turn auto-updates off with `AUTO_UPDATE_REPORT=false` in the skill's `.env` (don't read or edit `.env` yourself; tell the user to add the line).
+
+To rebuild and show it manually, run `python3 <skill-dir>/scripts/export_usage_html.py --open`. It writes `~/.image-gen/usage-report.html`: total and per-model spend, then one row per generation with thumbnail, settings, full prompt, every token count, and cost in USD and VND. Search and provider filtering are built in. Images open in a zoomable popup; each run's **Pricing** button shows tokens × rate = cost; the header's **Models & pricing** button compares every catalog model (rates in USD and VND, estimated cost per image at the standard tier, and the user's measured average). Re-run it after new generations; the file must stay in the store folder for thumbnails to load.
 
 ## Pricing facts (Standard tier, checked 2026-11-04)
 
@@ -104,3 +118,7 @@ Other models (catalog in `scripts/pricing.py` → `MODELS`; shown in the report'
 - **Nano Banana 2** (`gemini-3.1-flash-image`, $60/1M image output, ~$0.067 per 1K image) and **Nano Banana Pro** (`gemini-3-pro-image`, $120/1M, ~$0.134 per 1K image): pricing reference only; the script refuses to generate with them.
 
 When prices change, update `MODELS` and `PRICES_CHECKED_ON` in `scripts/pricing.py`, and this section.
+
+## Tests (for maintainers)
+
+After changing the scripts, run `python3 -m unittest discover -s tests` from this skill folder. The tests use a temp store, fake keys and a mocked API: no network, no cost, and they never read the real `.env` or `~/.image-gen`.
