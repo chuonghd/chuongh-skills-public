@@ -6,6 +6,7 @@ A collection of [Agent Skills](https://agentskills.io) — portable `SKILL.md` f
 
 | Skill | Description |
 |-------|-------------|
+| [`cost-aware-image-generation`](skills/cost-aware-image-generation/) | Generate images with a Gemini or OpenAI key at a predictable cost: medium quality and ~1024px on the short edge (any shape) by default, a stated reason for anything bigger, and a local ledger of every prompt, image, token count and cost (USD and VND). |
 | [`dummy-commit`](skills/dummy-commit/) | Create and push an empty commit to `main` to force a redeploy (Vercel, Netlify, or any push-triggered CI). |
 | [`elegant-everyday-visual-guide`](skills/elegant-everyday-visual-guide/) | Create original Elegant, Everyday fashion infographics from source visuals through a concise copy-selection and image-generation workflow. |
 | [`lou-lilou-visual-guide`](skills/lou-lilou-visual-guide/) | Create original Lou & Lilou fashion infographics from source visuals through a concise copy-selection and image-generation workflow, featuring the Lou and Lilou personas. |
