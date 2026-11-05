@@ -23,7 +23,9 @@ If the topic is ambiguous or too broad for one page, ask at most 3 short questio
 
 ### Writing
 
-- Plain, easy-to-read language and short sentences. The reader is a senior engineer: technical terms are fine **only when they carry meaning** — don't stack jargon; it's cognitive load.
+- **Plain words.** Write for a reader with little time: everyday words, one idea per sentence, and describe what happens: who does what, and when. Drop code names, abbreviations and terms coined in the conversation, or define each in a few words the first time. Keep an exact name when the reader needs it to act (a command, file or setting), and explain it in a few words. Example:
+  - Before: "Server (checkout-events route) and Pixel, with one shared event ID so Meta keeps one."
+  - After: "Both our server and the visitor's browser send the event, tagged with the same ID, so Meta counts it once."
 - **Focused and critical.** Every block must serve the question in section 1. Cut relevant-but-not-insightful content: generic background, restating the obvious, boilerplate caveats, exhaustive lists. If a section would be filler, drop it — sections are optional, insight is not.
 - Have a point of view: say what you think, why, and what would change your mind. Flag weak spots — in the user's idea and in your own reasoning. Mark uncertainty honestly ("not verified", "assumption").
 - Ground claims in evidence from the conversation (real names and numbers). **Never invent facts** — no made-up owners, dates or numbers; write `TBD` and tell the user. If sources disagree, use the primary one and flag the conflict on the page.
@@ -187,7 +189,7 @@ Arrow marker (inside each `<svg>`):
    - no run of 4+ paragraphs without a table/diagram/callout; no invented numbers (`TBD` instead); headings aren't AI-sounding;
    - **look at it:** if Chrome is available, take a screenshot and check it (layout, text fitting in diagram boxes, nothing overflowing), e.g. `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --window-size=1100,1800 --screenshot=/tmp/htmlgen/shot.png file:///tmp/htmlgen/<file>.html` (on Linux: `google-chrome --headless=new …`); fix and re-check;
    - reads as the final state: no back-and-forth, dropped options or small decisions with their rationale;
-   - re-read once as the user: delete anything that doesn't serve the question.
+   - re-read once as the user: delete anything that doesn't serve the question, and check every table cell and detail panel: could they repeat it back without asking? If not, rewrite it in plain words.
 3. **Open:**
    - Mac (local session): `open /tmp/htmlgen/<file>.html`
    - Linux desktop: `xdg-open /tmp/htmlgen/<file>.html`
