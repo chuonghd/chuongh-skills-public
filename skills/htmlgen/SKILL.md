@@ -27,9 +27,10 @@ If the topic is ambiguous or too broad for one page, ask at most 3 short questio
   - Before: "Server (checkout-events route) and Pixel, with one shared event ID so Meta keeps one."
   - After: "Both our server and the visitor's browser send the event, tagged with the same ID, so Meta counts it once."
 - **Focused and critical.** Every block must serve the question in section 1. Cut relevant-but-not-insightful content: generic background, restating the obvious, boilerplate caveats, exhaustive lists. If a section would be filler, drop it — sections are optional, insight is not.
-- Have a point of view: say what you think, why, and what would change your mind. Flag weak spots — in the user's idea and in your own reasoning. Mark uncertainty honestly ("not verified", "assumption").
+- Take a clear position: the recommendation, why, and what would change it. Flag weak spots in the proposal and in the reasoning. Mark uncertainty honestly ("not verified", "assumption").
 - Ground claims in evidence from the conversation (real names and numbers). **Never invent facts** — no made-up owners, dates or numbers; write `TBD` and tell the user. If sources disagree, use the primary one and flag the conflict on the page.
 - **Outcomes, not the conversation.** The page shows where things landed, as if written fresh by someone who knows the final answer. Leave out the back-and-forth that got there: options tried and dropped, corrections, "we first thought…", and small tweaks along the way. Include a decision only if it changes what the reader does or believes; one big decision with its main reason beats ten small ones with theirs. A rejected option earns at most one line in a toggle, and only if someone is likely to propose it again.
+- **No trace of the chat.** The page is not a diary of the discussion. Never write who said what or when: no "(your yes)", "as you asked", "you asked if…", "as discussed", "we agreed", "now" vs "before this update", "the docs confirm…". State the user's decisions as plain facts ("Test visits are kept out of reports"). Answer the user's questions in the body as plain statements, not as replies. For who does what, use neutral role labels ("Code:", "Settings:", "Check:"), never "me" / "you" / "I'd". Cite sources as links, not as narration.
 - Lists and short paragraphs over walls of text.
 - **Visual rhythm:** never more than 3 paragraphs in a row without an anchor (table, diagram, callout, short snippet).
 - **Tables over prose** for anything compared across 2+ options or metrics: bold row leads, ✅ ⚠️ ❌ for status.
@@ -133,7 +134,7 @@ figure{margin:18px 0}figure svg{display:block;max-width:100%;height:auto;margin:
     <ul><li><b>Label:</b> …</li></ul></div></div>
   <!-- only if needed -->
   <div class="callout decide"><div class="ci">🤔</div><div class="cb"><b class="t">Decisions needed</b>
-    <ol><li><b>…?</b> My recommendation: … because …</li></ol></div></div>
+    <ol><li><b>…?</b> Recommended: … because …</li></ol></div></div>
 
   <h2>…</h2>
   <p>…</p>
@@ -180,7 +181,7 @@ Arrow marker (inside each `<svg>`):
 
 1. **Write** to `/tmp/htmlgen/<yyyy-mm-dd>-<slug>.html` (`mkdir -p`). Reusing the same slug in this conversation = an updated version:
    - **Rewrite affected sections in place** so the page reads as one current, final version. Don't append new sections or a running history of the discussion.
-   - Add a "What changed" callout under the TL;DR only for **material** changes (a different recommendation, scope, number or risk), at most 3 bullets. Small wording, layout or detail tweaks don't go in it; if nothing material changed, leave the callout out.
+   - Never add a "What changed" callout, change log or update notes about this page's edits. Updates are told in the chat reply, not on the page. (A "what changed" section about the project itself, as on status pages, is fine.)
    - Before saving, cut anything a reader who missed the conversation wouldn't need.
 2. **Check** before opening:
    - no `src=`/`href=` to `http(s)://` except plain `<a>` links; no `fetch(`;
@@ -189,9 +190,10 @@ Arrow marker (inside each `<svg>`):
    - no run of 4+ paragraphs without a table/diagram/callout; no invented numbers (`TBD` instead); headings aren't AI-sounding;
    - **look at it:** if Chrome is available, take a screenshot and check it (layout, text fitting in diagram boxes, nothing overflowing), e.g. `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --window-size=1100,1800 --screenshot=/tmp/htmlgen/shot.png file:///tmp/htmlgen/<file>.html` (on Linux: `google-chrome --headless=new …`); fix and re-check;
    - reads as the final state: no back-and-forth, dropped options or small decisions with their rationale;
+   - **no chat traces:** search the file (e.g. `grep -n -i -E "your yes|you asked|as discussed|we agreed|\(me\)|\(you\)|I'd |my recommendation" <file>`) and rewrite every hit; recommendations read "Recommended: …";
    - re-read once as the user: delete anything that doesn't serve the question, and check every table cell and detail panel: could they repeat it back without asking? If not, rewrite it in plain words.
 3. **Open:**
    - Mac (local session): `open /tmp/htmlgen/<file>.html`
    - Linux desktop: `xdg-open /tmp/htmlgen/<file>.html`
    - Remote or headless machine: copy it somewhere the user's computer can open (a synced folder, if they have one), or just give the user the path.
-4. **Reply** in 1–3 lines: what the page covers, where it is, and the decisions needed (if any). Don't repeat the page in chat.
+4. **Reply** in 1–3 lines: what the page covers, where it is, and the decisions needed (if any). For an updated page, say in the reply what changed. Don't repeat the page in chat.
