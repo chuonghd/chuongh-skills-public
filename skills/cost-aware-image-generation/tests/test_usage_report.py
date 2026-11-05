@@ -74,6 +74,12 @@ class DailyChartTest(unittest.TestCase):
             mantissa = step / 10 ** math.floor(math.log10(step))
             self.assertIn(round(mantissa, 6), (1, 2, 2.5, 5, 10))
 
+    def test_date_labels_never_crowd_each_other(self):
+        html = daily_chart.daily_charts_html([ledger_record(0.5)])
+        xs = sorted(float(x) for x in re.findall(r'<text class="axis" x="([0-9.]+)" y="\d+" text-anchor="middle">', html))
+        band = (daily_chart.W - daily_chart.LEFT - daily_chart.RIGHT) / daily_chart.DAYS
+        self.assertTrue(all(b - a >= 4 * band for a, b in zip(xs, xs[1:])), xs)
+
     def test_chart_has_one_hover_target_per_day(self):
         html = daily_chart.daily_charts_html([ledger_record(0.5)])
         self.assertEqual(len(re.findall(r'class="hit"', html)), 30)

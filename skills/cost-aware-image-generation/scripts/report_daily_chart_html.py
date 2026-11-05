@@ -146,7 +146,9 @@ def daily_charts_html(records):
             parts.append(f'<path class="bar" d="M{x0:.1f},{base:.1f} V{y0 + r:.1f} Q{x0:.1f},{y0:.1f} {x0 + r:.1f},{y0:.1f} '
                          f'H{x0 + bar_w - r:.1f} Q{x0 + bar_w:.1f},{y0:.1f} {x0 + bar_w:.1f},{y0 + r:.1f} V{base:.1f} Z"/>')
         points.append((cx, y_img(n), n))
-        if i % 7 == 0 or i == len(daily) - 1:
+        last = len(daily) - 1
+        # Weekly date labels plus today; skip a weekly label that would crowd today's.
+        if i == last or (i % 7 == 0 and last - i >= 4):
             parts.append(f'<text class="axis" x="{cx:.1f}" y="{H - 8}" text-anchor="middle">{escape(d.strftime("%b %-d"))}</text>')
 
     parts.append('<polyline class="line" points="' + " ".join(f"{x:.1f},{y:.1f}" for x, y, _ in points) + '"/>')
