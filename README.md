@@ -16,20 +16,34 @@ A collection of [Agent Skills](https://agentskills.io) — portable `SKILL.md` f
 
 ## Installation
 
-Each skill is a self-contained folder under `skills/`. To install one, copy its folder into your tool's skills directory:
-
-| Tool | Personal (all projects) | Project-local |
-|------|-------------------------|---------------|
-| Claude Code | `~/.claude/skills/` | `.claude/skills/` |
-| Codex / Cursor / Gemini CLI | `~/.agents/skills/` | `.agents/skills/` |
-
-For example, to install `project-setup` for Claude Code:
+Clone the repo and run `install.sh`. It links each skill you pick into the shared skills folder, so every tool uses the same copy and a `git pull` updates them all:
 
 ```bash
-cp -R skills/project-setup ~/.claude/skills/
+git clone https://github.com/chuonghd/chuongh-skills-public.git
+cd chuongh-skills-public
+
+./install.sh                         # pick from a numbered list
+./install.sh htmlgen dummy-commit    # install one or more by name
+./install.sh --all                   # install every skill
+./install.sh --list                  # show what's installed
+./install.sh -u htmlgen              # uninstall
 ```
 
-The skill is picked up automatically the next time the tool starts. The folder name must stay the same as the skill's `name` in its frontmatter.
+Each picked skill gets two links, both pointing at `skills/<name>` in this repo:
+
+| Link | Read by |
+|------|---------|
+| `~/.agents/skills/<name>` | Codex, Gemini CLI, Cursor and other tools that follow the open skills standard |
+| `~/.claude/skills/<name>` | Claude Code, which doesn't read `~/.agents/skills/` (pass `--no-claude` to skip) |
+
+Notes:
+
+- The script makes one link per skill. It doesn't replace the whole `skills/` folder, so other skills already in there are kept. It never overwrites a real folder: if one with the same name exists, it skips it and tells you.
+- Don't also link `~/.gemini/skills/`. Gemini CLI already reads `~/.agents/skills/`, so the skills would show up twice.
+- Restart the tool after installing. Claude Code updates have been reported to remove symlinks from `~/.claude/skills/`, and the Claude Desktop app skips them. If a skill goes missing, re-run `./install.sh`. For Desktop, copy the folder instead.
+- Set `AGENTS_SKILLS_DIR` / `CLAUDE_SKILLS_DIR` to link somewhere else, e.g. a project's `.agents/skills/` and `.claude/skills/`.
+
+To install by hand instead, copy the folder (e.g. `cp -R skills/project-setup ~/.claude/skills/`). The folder name must stay the same as the skill's `name` in its frontmatter.
 
 ## License
 
