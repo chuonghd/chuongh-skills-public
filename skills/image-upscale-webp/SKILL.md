@@ -22,9 +22,9 @@ Write the Python path out in full (a hook blocks it inside a shell variable):
 ```bash
 S=~/.claude/skills/image-upscale-webp/scripts
 # to a target size (upscales only if needed); .png = lossless intermediate, .webp = final
-~/.claude/skills/.venv/bin/python3 -I $S/upscale.py in.png out.webp --width 2400   # or --height H, --size WxH (same shape)
+~/.agents/.venv/bin/python3 -I $S/upscale.py in.png out.webp --width 2400   # or --height H, --size WxH (same shape)
 # WebP from an image that is already the right size (or larger: --width/--height shrink only)
-~/.claude/skills/.venv/bin/python3 -I $S/encode_webp.py in.png [out.webp] [--quality 85] [--width W]
+~/.agents/.venv/bin/python3 -I $S/encode_webp.py in.png [out.webp] [--quality 85] [--width W]
 ```
 
 A 2000x2500 cutout to 2x takes about 30 s (Upscayl on the GPU), so give long runs a timeout.
@@ -53,4 +53,4 @@ Each prints its steps, e.g. `source 1200x1500 RGBA | upscayl 2x -> 2400x3000 | l
   Override with `UPSCAYL_DIR`. Same arguments the app uses, so results match the app's
   "2x / High Fidelity" output (`*_upscayl_2x_high-fidelity-4x.png`).
 - Node + `@jsquash/webp` 1.5.0 in this folder (`npm install` here if missing).
-- Python 3 with `numpy` and `Pillow` (here: `~/.claude/skills/.venv`, used in the commands above).
+- Python 3 with `numpy` and `Pillow` (here: `~/.agents/.venv`, used in the commands above).
