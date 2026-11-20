@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from pricing import PRICES, PRICES_CHECKED_ON  # noqa: E402  (fallback for runs logged before rates were stored)
 import report_model_catalog_html as catalog  # noqa: E402
 import report_daily_chart_html as daily_chart  # noqa: E402
+import report_image_viewer_html as viewer  # noqa: E402
 from report_styles import CSS  # noqa: E402
 
 TOKEN_COLUMNS = [("input_text", "Text in"), ("input_image", "Image in"), ("output_image", "Image out"),
@@ -124,25 +125,53 @@ def token_cell(count, usd):
     return f'<td class="num tok">{fmt_tokens(count)}<div class="usd">{fmt_usd_fine(usd)}</div></td>'
 
 
+def viewer_info_template(store, r, prompt, created_full):
+    """Hidden details for the full-screen viewer's right-hand panel: when, model, settings, images, tokens, cost, prompt."""
+    st = r.get("settings", {})
+    tokens = r.get("tokens") or {}
+    breakdown = r.get("cost_breakdown_usd") or {}
+    outputs = r.get("outputs") or []
+    images = [(rel(store, outputs[0]), "Output")] if outputs else []
+    images += [(rel(store, i["saved"]), f"Input {n}") for n, i in enumerate(r.get("inputs") or [], 1)]
+    thumbs = "".join(f'<figure><img data-src="{src}" src="{src}" alt="{label}">{label}</figure>' for src, label in images)
+    token_rows = "".join(
+        f'<tr><td>{label}</td><td>{fmt_tokens(tokens.get(k))}</td><td>{fmt_usd_fine(breakdown.get(k))}</td></tr>'
+        if tokens.get(k) != 0 else f'<tr class="zero"><td>{label}</td><td>—</td><td></td></tr>'
+        for k, label in TOKEN_COLUMNS)
+    reason = (f'<p class="reason">Above standard ({escape(", ".join(st["overridden"]))}): {escape(st.get("reason") or "")}</p>'
+              if st.get("overridden") else "")
+    error = f'<p class="error">Failed: {escape(r.get("error", ""))}</p>' if r.get("status") != "ok" else ""
+    return f"""<template class="vinfo-t"><div class="vi-when">{created_full}</div>
+<div class="vi-model">{catalog.model_name_html(st.get('model', ''), st.get('provider'))}</div>{reason}{error}
+<dl class="vi-props"><dt>Settings</dt><dd>{escape(settings_label(st))}</dd><dt>Image size</dt><dd class="vi-dims">—</dd>
+<dt>Project</dt><dd>{escape(Path(r.get('project') or '').name) or '—'}</dd><dt>Took</dt><dd>{r.get('duration_s', '—')}s</dd>
+<dt>Cost</dt><dd>{fmt_usd(r.get('cost_usd'))} · {fmt_vnd(r.get('cost_vnd'))}</dd></dl>
+{f'<h4>Images</h4><div class="vi-imgs">{thumbs}</div>' if len(images) > 1 else ''}
+<h4>Tokens</h4><table class="vi-tokens"><tbody>{token_rows}</tbody></table>
+<h4>Prompt</h4><div class="codeblock"><div class="cb-bar"><span>{len(prompt):,} chars</span><button type="button" class="ghost" data-copy>Copy</button></div>
+<pre><code>{escape(prompt)}</code></pre></div>
+<div class="runid">{escape(r['id'])}</div></template>"""
+
+
 def row_html(store, r):
     st = r.get("settings", {})
     tokens = r.get("tokens") or {}
     breakdown = r.get("cost_breakdown_usd") or {}
     outputs = r.get("outputs") or []
     prompt = r.get("prompt") or ""
-    # Images carry data-zoom so the page script opens them in the in-page viewer.
-    caption = escape(r["id"])
-    thumb = (f'<img data-zoom data-caption="{caption} · output" src="{rel(store, outputs[0])}" loading="lazy" alt="Generated image">'
+    # Images carry data-zoom so the page script opens them in the full-screen viewer.
+    thumb = (f'<img data-zoom src="{rel(store, outputs[0])}" loading="lazy" alt="Generated image">'
              if outputs else '<div class="noimg">no image</div>')
-    inputs = "".join(f'<img data-zoom data-caption="{caption} · input {n}" src="{rel(store, i["saved"])}" alt="Input image {n}">'
+    inputs = "".join(f'<img data-zoom src="{rel(store, i["saved"])}" alt="Input image {n}">'
                      for n, i in enumerate(r.get("inputs") or [], 1))
-    created = datetime.fromisoformat(r["created_at"]).strftime("%b %-d · %H:%M")
+    created_at = datetime.fromisoformat(r["created_at"])
+    created = created_at.strftime("%b %-d · %H:%M")
     reason = (f'<div class="reason">Above standard ({escape(", ".join(st["overridden"]))}): {escape(st.get("reason") or "")}</div>'
               if st.get("overridden") else "")
     error = f'<div class="error">{escape(r.get("error", ""))}</div>' if r.get("status") != "ok" else ""
     tokens_html = "".join(token_cell(tokens.get(k), breakdown.get(k)) for k, _ in TOKEN_COLUMNS)
     return f"""<tr data-provider="{escape(st.get('provider', ''))}" data-search="{escape(prompt.lower())}">
-  <td class="c-img">{thumb}</td>
+  <td class="c-img">{thumb}{viewer_info_template(store, r, prompt, created_at.strftime("%b %-d, %Y · %H:%M"))}</td>
   <td class="c-run"><div class="when">{created}</div>
     <div class="chips"><span class="chip">{catalog.model_name_html(st.get('model', ''), st.get('provider'))}</span><button type="button" class="ghost price-btn">Pricing</button>{pricing_template(r)}</div>
     <div class="meta-line">{escape(settings_label(st))}</div>
@@ -201,20 +230,6 @@ SCRIPT = """
     details.open = !details.open;
   });
 
-  // Image viewer: click any image to open; toggle fit / 100%.
-  const viewer = document.getElementById('viewer'), big = viewer.querySelector('.stage img');
-  const zoomBtn = viewer.querySelector('[data-act=zoom]'), cap = viewer.querySelector('.cap');
-  function setFit(fit) { viewer.classList.toggle('fit', fit); zoomBtn.textContent = fit ? 'Zoom to 100%' : 'Fit to window'; }
-  document.addEventListener('click', e => {
-    const t = e.target.closest('img[data-zoom]');
-    if (!t) return;
-    big.src = t.getAttribute('src'); cap.textContent = t.dataset.caption || ''; setFit(true); viewer.showModal();
-  });
-  big.addEventListener('load', () => { cap.textContent = cap.textContent.split(' · ').slice(0, 2).join(' · ') + ` · ${big.naturalWidth}×${big.naturalHeight}`; });
-  zoomBtn.addEventListener('click', () => setFit(!viewer.classList.contains('fit')));
-  big.addEventListener('click', () => setFit(!viewer.classList.contains('fit')));
-  viewer.querySelector('.stage').addEventListener('click', e => { if (e.target === e.currentTarget) viewer.close(); });
-
   // Per-run pricing: copy the row's hidden <template> into the shared dialog.
   const pricing = document.getElementById('pricing'), pricingBody = pricing.querySelector('.body');
   document.addEventListener('click', e => {
@@ -253,7 +268,7 @@ def build_html(store, records):
     return f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Image generation usage</title>
-<style>{CSS}{catalog.CSS}{daily_chart.CSS}</style></head><body>
+<style>{CSS}{catalog.CSS}{daily_chart.CSS}{viewer.CSS}</style></head><body>
 <main class="page">
   <div class="title-row"><h1>Image generation usage</h1>
     <div class="title-actions"><button type="button" class="ghost" id="howto-open">{INFO_ICON}How to update</button>
@@ -272,13 +287,11 @@ def build_html(store, records):
 {rows}
   </tbody></table></div>
 </main>
-<dialog id="viewer" class="viewer fit"><div class="bar"><div class="cap"></div>
-  <button type="button" data-act="zoom">Zoom to 100%</button><button type="button" data-close aria-label="Close">✕</button></div>
-  <div class="stage"><img alt="Full-size image"></div></dialog>
+{viewer.DIALOG}
 {howto_dialog_html(store)}
 <dialog id="pricing" class="sheet pricing-box"><button type="button" class="ghost close" data-close>Close</button><div class="body"></div></dialog>
 {catalog.models_dialog_html(records, fx)}
-<script>{SCRIPT}{daily_chart.JS}</script>
+<script>{SCRIPT}{viewer.JS}{daily_chart.JS}</script>
 </body></html>"""
 
 

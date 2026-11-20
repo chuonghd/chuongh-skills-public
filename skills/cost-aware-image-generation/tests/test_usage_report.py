@@ -42,6 +42,14 @@ class ReportBuildTest(IsolatedStoreTest):
         html = self.build(ledger_record(0.01, outputs=[str(out)]))
         self.assertIn('src="runs/r1/outputs/image-1.png"', html)
 
+    def test_each_run_carries_its_details_for_the_viewer(self):
+        out = self.store / "runs" / "r1" / "outputs" / "image-1.png"
+        html = self.build(ledger_record(0.01, prompt="a red fox <in snow>", outputs=[str(out)]))
+        info = html.split('<template class="vinfo-t">', 1)[1].split("</template>", 1)[0]
+        self.assertIn("a red fox &lt;in snow&gt;", info)             # escaped prompt
+        self.assertIn("$0.0100", info)
+        self.assertIn('id="viewer"', html)
+
     def test_empty_store_explains_instead_of_crashing(self):
         with self.assertRaises(SystemExit) as ctx:
             report.load_ledger(self.store)

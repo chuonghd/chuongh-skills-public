@@ -104,15 +104,4 @@ CSS = """
   .ptable tfoot td { border-bottom:0; font-weight:600; }
   .ptable tfoot tr + tr td { font-weight:400; color:var(--muted); font-size:12.5px; }
 
-  /* Image viewer: fits the window by default; "100%" shows actual pixels and scrolls. */
-  dialog.viewer { border:0; padding:0; width:100vw; height:100vh; max-width:none; max-height:none; background:rgba(15,15,15,.92); color:#fff; }
-  dialog.viewer::backdrop { background:rgba(0,0,0,.6); }
-  .viewer .bar { position:fixed; top:0; left:0; right:0; display:flex; align-items:center; gap:8px; padding:10px 16px; z-index:2; }
-  .viewer .cap { flex:1; font-size:13px; color:rgba(255,255,255,.75); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .viewer button { font:inherit; font-size:13px; color:#fff; background:rgba(255,255,255,.1); border:0; border-radius:6px; padding:6px 12px; cursor:pointer; }
-  .viewer button:hover { background:rgba(255,255,255,.2); }
-  .viewer .stage { position:absolute; inset:52px 0 0 0; overflow:auto; display:flex; }
-  .viewer .stage img { margin:auto; display:block; border-radius:4px; }
-  .viewer.fit .stage img { max-width:calc(100vw - 32px); max-height:calc(100vh - 72px); cursor:zoom-in; }
-  .viewer:not(.fit) .stage img { max-width:none; max-height:none; cursor:zoom-out; }
 """
