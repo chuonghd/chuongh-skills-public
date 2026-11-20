@@ -25,6 +25,7 @@ from pricing import PRICES, PRICES_CHECKED_ON  # noqa: E402  (fallback for runs 
 import report_model_catalog_html as catalog  # noqa: E402
 import report_daily_chart_html as daily_chart  # noqa: E402
 import report_image_viewer_html as viewer  # noqa: E402
+import report_brand_logo_svg as brand  # noqa: E402
 from report_styles import CSS  # noqa: E402
 
 TOKEN_COLUMNS = [("input_text", "Text in"), ("input_image", "Image in"), ("output_image", "Image out"),
@@ -268,9 +269,10 @@ def build_html(store, records):
     return f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Image generation usage</title>
-<style>{CSS}{catalog.CSS}{daily_chart.CSS}{viewer.CSS}</style></head><body>
+{brand.FAVICON_LINK}
+<style>{CSS}{brand.CSS}{catalog.CSS}{daily_chart.CSS}{viewer.CSS}</style></head><body>
 <main class="page">
-  <div class="title-row"><h1>Image generation usage</h1>
+  <div class="title-row"><div class="brand">{brand.LOGO_SVG}<h1>Image generation usage</h1></div>
     <div class="title-actions"><button type="button" class="ghost" id="howto-open">{INFO_ICON}How to update</button>
       <button type="button" class="ghost" id="models-open">{TAG_ICON}Models &amp; pricing</button></div></div>
   <dl class="props">
